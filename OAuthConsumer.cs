@@ -134,14 +134,9 @@ namespace OAuth
         public OAuthToken RequestToken { get { return _GetRequestToken(); } }
 
         /// <summary>
-        /// A private copy of the access token.
-        /// </summary>
-        internal OAuthToken _AccessToken { get; set; }
-
-        /// <summary>
         /// 
         /// </summary>
-        public OAuthToken AccessToken { get { return _GetAccessToken(); } set { _AccessToken = value; } }
+        public OAuthToken AccessToken { get; set; }
 
         /// <summary>
         /// 
@@ -301,7 +296,11 @@ namespace OAuth
 
         }
 
-        private OAuthToken _GetAccessToken()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public OAuthToken UpdateAccessToken()
         {
             //
             // Raise an exception if the Request token url is not set.
@@ -310,8 +309,8 @@ namespace OAuth
                 throw new OAuthException("The AccessTokenUrl must be set.");
 
 
-            if (_AccessToken != OAuthToken.Empty)
-                return _RequestToken;
+            if (AccessToken != OAuthToken.Empty)
+                return AccessToken;
 
             //
             //
@@ -324,10 +323,10 @@ namespace OAuth
             Dictionary<string, string> query = _QueryStringToDictionary(response);
 
             //
-            _AccessToken = new OAuthToken(query["oauth_token"], query["oauth_token_secret"]);
+            AccessToken = new OAuthToken(query["oauth_token"], query["oauth_token_secret"]);
 
             //
-            return _AccessToken;
+            return AccessToken;
         }
         
         /// <summary>
