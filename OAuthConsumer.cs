@@ -152,7 +152,7 @@ namespace OAuth
         public OAuthConsumer(string key, string secret)
         {
             _RequestToken = OAuthToken.Empty;
-            _AccessToken = OAuthToken.Empty;
+            AccessToken = OAuthToken.Empty;
 
             Key = key;
             Secret = secret;
