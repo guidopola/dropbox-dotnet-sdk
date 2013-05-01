@@ -106,6 +106,11 @@ namespace OAuth
         public string AuthorizationUrlBase { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string AccessTokenUrl { get; set; }
+
+        /// <summary>
         /// The consumer key.
         /// </summary>
         public string Key { get; set; }
@@ -118,7 +123,7 @@ namespace OAuth
         /// <summary>
         /// A private copy of the request token.
         /// </summary>
-        private OAuthToken _RequestToken { get; set; }
+        internal OAuthToken _RequestToken { get; set; }
 
         /// <summary>
         /// Returns the request token.
@@ -129,9 +134,14 @@ namespace OAuth
         public OAuthToken RequestToken { get { return _GetRequestToken(); } }
 
         /// <summary>
+        /// A private copy of the access token.
+        /// </summary>
+        internal OAuthToken _AccessToken { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
-        public OAuthToken AccessToken { get; set; }
+        public OAuthToken AccessToken { get { return _GetAccessToken(); } set { _AccessToken = value; } }
 
         /// <summary>
         /// 
@@ -147,7 +157,7 @@ namespace OAuth
         public OAuthConsumer(string key, string secret)
         {
             _RequestToken = OAuthToken.Empty;
-            AccessToken = OAuthToken.Empty;
+            _AccessToken = OAuthToken.Empty;
 
             Key = key;
             Secret = secret;
@@ -200,6 +210,8 @@ namespace OAuth
             //
             string signature = GenerateSignature(BaseUri, Key, Secret, Token.Token, Token.Secret, method.ToString(),
                 TimeStamp, Nonce, out normalizedUrl, out normalizedParams);
+
+            signature = Uri.EscapeDataString(signature).Replace("%20", "+");
 
             //
             UriBuilder requestUri = new UriBuilder(normalizedUrl);
@@ -287,6 +299,35 @@ namespace OAuth
             //
             return _RequestToken;
 
+        }
+
+        private OAuthToken _GetAccessToken()
+        {
+            //
+            // Raise an exception if the Request token url is not set.
+            //
+            if (string.IsNullOrEmpty(AccessTokenUrl))
+                throw new OAuthException("The AccessTokenUrl must be set.");
+
+
+            if (_AccessToken != OAuthToken.Empty)
+                return _RequestToken;
+
+            //
+            //
+            //
+            string response = (string)Request(RequestMethod.GET, RequestType.TEXTPLAIN, AccessTokenUrl, null);
+
+            //
+            //
+            //
+            Dictionary<string, string> query = _QueryStringToDictionary(response);
+
+            //
+            _AccessToken = new OAuthToken(query["oauth_token"], query["oauth_token_secret"]);
+
+            //
+            return _AccessToken;
         }
         
         /// <summary>

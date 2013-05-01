@@ -65,6 +65,7 @@ namespace Dropbox
             //
             base.RequestTokenUrl = "https://api.dropbox.com/1/oauth/request_token";
             base.AuthorizationUrlBase = "https://www.dropbox.com/1/oauth/authorize";
+            base.AccessTokenUrl = "https://api.dropbox.com/1/oauth/access_token";
         }
 
         /// <summary>
