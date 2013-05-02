@@ -131,7 +131,7 @@ namespace OAuth
         /// <remarks>
         /// If the request token is empty, this accessor request the token.
         /// </remarks>
-        public OAuthToken RequestToken { get { return _GetRequestToken(); } }
+        public OAuthToken RequestToken { get { return _GetRequestToken(); } private set { _RequestToken = value; } }
 
         /// <summary>
         /// 
@@ -151,9 +151,15 @@ namespace OAuth
         /// <param name="Secret"></param>
         public OAuthConsumer(string key, string secret)
         {
-            _RequestToken = OAuthToken.Empty;
-            AccessToken = OAuthToken.Empty;
+            //
+            //
+            //
+            if (String.IsNullOrEmpty(key) || String.IsNullOrEmpty(secret))
+                throw new Exception("The consumer key and/or consumer secret can't be empty.");
 
+            //
+            RequestToken = OAuthToken.Empty;
+            AccessToken = OAuthToken.Empty;
             Key = key;
             Secret = secret;
         }

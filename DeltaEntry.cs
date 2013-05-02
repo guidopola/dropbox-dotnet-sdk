@@ -43,7 +43,7 @@ namespace Dropbox
 
         public DeltaEntry()
         {
-            FileEntry = new FileEntry();
+            FileEntry = FileEntry.Empty;
         }
 
         /// <summary>
