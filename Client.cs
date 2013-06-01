@@ -129,6 +129,26 @@ namespace Dropbox
         }
 
         /// <summary>
+        /// Moves a file or folder to a new location.
+        /// </summary>
+        /// <param name="Path">Specifies the file or folder to be moved from relative to root.</param>
+        /// <param name="Destination">Specifies the destination path, including the new name for the file or folder, 
+        /// relative to root.</param>
+        /// <returns>FileEntry for the moved file or folder.</returns>
+        public FileEntry MoveFile(string Path, string Destination)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("root", session.AccessType));
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("from_path", Path));
+            parameters.Add(new QueryParameter("to_path", Destination));
+
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/fileops/move"), parameters));
+        }
+
+        /// <summary>
         /// Retrieves file and folder metadata.
         /// </summary>
         /// <param name="Path"></param>
