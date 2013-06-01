@@ -99,10 +99,33 @@ namespace Dropbox
                 session.FormatAPIServerUrl("/fileops/copy"), parameters));
         }
 
-
+        /// <summary>
+        /// Copies a file or folder to a new location.
+        /// </summary>
+        /// <param name="Path">The file or folder to be copied from relative to root</param>
+        /// <param name="Destination">Specifies the destination path, including the new name for the file or folder, 
+        /// relative to root.</param>
+        /// <returns>FileEntry for the copy of the file or folder</returns>
         public FileEntry CopyFile(string Path, string Destination)
         {
             return CopyFile(Path, Destination, false);
+        }
+
+        /// <summary>
+        /// Deletes a file or folder.
+        /// </summary>
+        /// <param name="Path">The path to the file or folder to be deleted.</param>
+        /// <returns>FileEntry for the deleted file or folder.</returns>
+        public FileEntry RemoveFile(string Path)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("root", session.AccessType));
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("path", Path));
+
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/fileops/delete"), parameters));
         }
 
         /// <summary>
