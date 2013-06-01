@@ -33,16 +33,34 @@ namespace Dropbox
     /// </summary>
     public class Session : OAuthConsumer
     {
-        private const string API_SERVER = "api.dropbox.com";
-        private const string CONTENT_SERVER = "api-content.dropbox.com";
-        private const string WEB_SERVER = "www.dropbox.com";
-        private const int API_VERSION = 1;
+        /// <summary>
+        /// 
+        /// </summary>
+        private const string kApiServer = "api.dropbox.com";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private const string kContentServer = "api-content.dropbox.com";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private const string kWebServer = "www.dropbox.com";
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private const int kApiVersion = 1;
 
         /// <summary>
         /// 
         /// </summary>
         public readonly AccessType AppAccess;
 
+        /// <summary>
+        /// 
+        /// </summary>
         public string AccessType { get { return _AccessType(); } }
 
         /// <summary>
@@ -112,8 +130,7 @@ namespace Dropbox
         /// <returns></returns>
         public string FormatAPIServerUrl(string path)
         {
-            return String.Format("https://{0}/{1}{2}", 
-                API_SERVER, API_VERSION, path);
+            return String.Format("https://{0}/{1}{2}", kApiServer, kApiVersion, path);
         }
 
         /// <summary>
@@ -123,8 +140,7 @@ namespace Dropbox
         /// <returns></returns>
         public string FormatContentUrl(string path)
         {
-            return String.Format("https://{0}/{1}{2}",
-                CONTENT_SERVER, API_VERSION, path);
+            return String.Format("https://{0}/{1}{2}", kContentServer, kApiServer, path);
         }
 
         /// <summary>

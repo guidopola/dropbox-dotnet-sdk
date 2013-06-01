@@ -75,8 +75,8 @@ namespace Dropbox
         /// </summary>
         public void Update()
         {
-            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON, 
-                "https://api.dropbox.com/1/account/info", null);
+            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
+                session.FormatAPIServerUrl("/account/info"), null);
 
             //
             //
