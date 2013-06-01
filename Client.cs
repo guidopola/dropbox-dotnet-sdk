@@ -222,6 +222,27 @@ namespace Dropbox
         }
 
         /// <summary>
+        /// Restores a file path to a previous revision.
+        /// 
+        /// Unlike downloading a file at a given revision and then re-uploading it, this call is atomic. 
+        /// It also saves a bunch of bandwidth.
+        /// </summary>
+        /// <param name="Path">The path to the file.</param>
+        /// <param name="Revision">The revision of the file to restore.</param>
+        /// <returns>The FileEntry of the restored file.</returns>
+        public FileEntry RestoreFile(string Path, string Revision)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("path", Path));
+            parameters.Add(new QueryParameter("rev", Revision));
+
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/restore/" + session.AccessType + Path), parameters));
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="Path"></param>
