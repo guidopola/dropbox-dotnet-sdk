@@ -31,6 +31,11 @@ namespace Dropbox
     public class QuotaInfo
     {
         /// <summary>
+        /// 
+        /// </summary>
+        public static readonly QuotaInfo Empty = new QuotaInfo();
+
+        /// <summary>
         /// The user's used quota outside of shared folders (bytes).
         /// </summary>
         public long Normal { get; set; }

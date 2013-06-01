@@ -34,6 +34,15 @@ namespace Dropbox
         /// 
         /// </summary>
         /// <param name="message"></param>
+        public DropboxException(string message)
+            : base(message)
+        {
+
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
         /// <param name="innerException"></param>
         public DropboxException(string message, Exception innerException)
             :   base(message, innerException)

@@ -31,7 +31,7 @@ namespace Dropbox
         /// <summary>
         /// 
         /// </summary>
-        public static readonly FileEntry Empty;
+        public static readonly FileEntry Empty = new FileEntry();
 
         /// <summary>
         /// The file size in bytes.
@@ -115,11 +115,6 @@ namespace Dropbox
         ///
         /// </summary>
         public List<FileEntry> Childs { get; set; }
-
-        static FileEntry()
-        {
-            Empty = new FileEntry();
-        }
 
         /// <summary>
         /// 

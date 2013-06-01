@@ -29,10 +29,13 @@ using MiniJSON;
 namespace Dropbox
 {
     /// <summary>
-    /// 
+    /// Defines the dropbox api client.
     /// </summary>
     public class Client
     {
+        public const int kFileLimit = 25000;
+        public const int kFileLimitSearch = 1000;
+
         /// <summary>
         /// 
         /// </summary>
@@ -77,16 +80,13 @@ namespace Dropbox
                 session.FormatAPIServerUrl("/fileops/create_folder"), ParamList);
 
             //
+            // @TODO: Cache the file entry?
             //
-            //
-            FileEntry entry = new FileEntry(json);
-
-
-            return entry;
+            return new FileEntry(json);
         }
 
         /// <summary>
-        /// https://www.dropbox.com/developers/reference/api#metadata
+        /// Retrieves file and folder metadata.
         /// </summary>
         /// <param name="Path"></param>
         /// <param name="FileLimit"></param>
@@ -96,6 +96,9 @@ namespace Dropbox
         /// <returns></returns>
         public FileEntry EntryMetaData(string Path, int FileLimit, bool ListChildren, string Hash, string RevisionId)
         {
+            if( FileLimit > kFileLimit )
+                throw new DropboxException("FileLimit exceed 25,000.");
+
             //
             // @TODO: Create function FormatPath or similar
             //
@@ -104,14 +107,15 @@ namespace Dropbox
 
             List<QueryParameter> ParamList = new List<QueryParameter>();
 
+            ParamList.Add(new QueryParameter("locale", session.Locale.ToString()));
             ParamList.Add(new QueryParameter("file_limit", FileLimit.ToString()));
             ParamList.Add(new QueryParameter("list", ListChildren.ToString()));
 
             if(!String.IsNullOrEmpty(Hash))
-                ParamList.Add(new QueryParameter("hash ", Hash));
+                ParamList.Add(new QueryParameter("hash", Hash));
 
             if (!String.IsNullOrEmpty(RevisionId))
-                ParamList.Add(new QueryParameter("rev ", RevisionId));
+                ParamList.Add(new QueryParameter("rev", RevisionId));
 
 
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
@@ -119,11 +123,9 @@ namespace Dropbox
                     session.GetAccessType(), Path)), ParamList);
 
             //
+            // @TODO: Cache the file entry?
             //
-            //
-            FileEntry entry = new FileEntry(json);
-
-            return entry;
+            return new FileEntry(json);
         }
 
         public StreamReader DownloadFile(string Path)
@@ -138,25 +140,182 @@ namespace Dropbox
         }
 
         /// <summary>
-        /// 
+        /// A way of letting you keep up with changes to files and folders in a user's Dropbox. 
+        /// You can periodically call RequestDelta to get a list of "delta entries", which are instructions on how to 
+        /// update your local state to match the server's state.
         /// </summary>
-        /// <param name="Cursor"></param>
-        /// <returns></returns>
-        public DeltaPage RequestDelta(string Cursor = null)
+        /// <param name="Cursor">A string that is used to keep track of your current state</param>
+        /// <returns>A DeltaPage object.</returns>
+        public DeltaPage RequestDelta(string Cursor)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
 
-            if( !String.IsNullOrEmpty(Cursor))
+            if (!String.IsNullOrEmpty(Cursor))
                 parameters.Add(new QueryParameter("cursor", Cursor));
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
 
-            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON, 
-                session.FormatAPIServerUrl("/delta"), parameters);
+            //
+            //
+            //
+            return new DeltaPage((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON, 
+                session.FormatAPIServerUrl("/delta"), parameters));
+        }
+
+        /// <summary>
+        /// A way of letting you keep up with changes to files and folders in a user's Dropbox. 
+        /// You can periodically call RequestDelta to get a list of "delta entries", which are instructions on how to 
+        /// update your local state to match the server's state.
+        /// </summary>
+        /// <returns>A DeltaPage object.</returns>
+        public DeltaPage RequestDelta()
+        {
+            return RequestDelta(String.Empty);
+        }
+
+        /// <summary>
+        /// Returns a list of FileEntry for all files and folders whose filename contains the given search string as a 
+        /// substring.
+        /// 
+        /// Searches are limited to the folder path and its sub-folder hierarchy provided in the call.
+        /// </summary>
+        /// <param name="Path">The path to the folder you want to search from</param>
+        /// <param name="Query">The search string. Must be at least three characters long</param>
+        /// <param name="FileLimit">The maximum and default value is 1,000. No more than FileLimit search results will 
+        /// be returned.</param>
+        /// <param name="IncludeDeleted">If this parameter is set to true, then files and folders that have been 
+        /// deleted will also be included in the search</param>
+        /// <returns>List of FileEntry for any matching files and folders</returns>
+        public List<FileEntry> Search(string Path, string Query, int FileLimit, bool IncludeDeleted)
+        {
+            List<FileEntry> result = new List<FileEntry>();
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("query", Query));
+            parameters.Add(new QueryParameter("file_limit", FileLimit.ToString()));
+            parameters.Add(new QueryParameter("include_deleted", IncludeDeleted.ToString()));
 
             //
             //
-            return new DeltaPage(json);
+            //
+            List<Object> json = (List<Object>)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/search/" + session.AppAccess + "/" + Path), parameters);
+
+            //
+            // Iterate through json and add it
+            //
+            foreach (JsonDictionary metadata in json)
+            {
+                result.Add(new FileEntry(metadata));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a list of FileEntry for all files and folders whose filename contains the given search string as a 
+        /// substring.
+        /// 
+        /// Searches are limited to the folder path and its sub-folder hierarchy provided in the call.
+        /// </summary>
+        /// <param name="Path">The path to the folder you want to search from</param>
+        /// <param name="Query">The search string. Must be at least three characters long</param>
+        /// <param name="FileLimit">The maximum and default value is 1,000. No more than FileLimit search results will 
+        /// be returned.</param>
+        /// <returns>List of FileEntry for any matching files and folders</returns>
+        public List<FileEntry> Search(string Path, string Query, int FileLimit)
+        {
+            return Search(Path, Query, FileLimit, false);
+        }
+
+        /// <summary>
+        /// Returns a list of FileEntry for all files and folders whose filename contains the given search string as a 
+        /// substring.
+        /// 
+        /// Searches are limited to the folder path and its sub-folder hierarchy provided in the call.
+        /// </summary>
+        /// <param name="Path">The path to the folder you want to search from</param>
+        /// <param name="Query">The search string. Must be at least three characters long</param>
+        /// <returns>List of FileEntry for any matching files and folders</returns>
+        public List<FileEntry> Search(string Path, string Query)
+        {
+            return Search(Path, Query, kFileLimitSearch);
+        }
+        
+        /// <summary>
+        /// Creates and returns a Dropbox link to files or folders users can use to view a preview of the file in a 
+        /// web browser.
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <param name="ShortUrl">When true (default), the url returned will be shortened using the Dropbox url 
+        /// shortener. If false, the url will link directly to the file's preview page.</param>
+        /// <returns>A Dropbox link to the given path. The link can be used publicly and directs to a preview page of 
+        /// the file</returns>
+        public string CreateShareLink(string Path, bool ShortUrl)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("short_url", ShortUrl.ToString()));
+
+            //
+            //
+            //
+            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/shares/" + session.AppAccess + "/" + Path), parameters);
+
+            return json.FindValue<string>("url");
+        }
+
+        /// <summary>
+        /// Creates and returns a Dropbox link to files or folders users can use to view a preview of the file in a 
+        /// web browser.
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <returns>A Dropbox link to the given path. The link can be used publicly and directs to a preview page of 
+        /// the file</returns>
+        public string CreateShareLink(string Path)
+        {
+            return CreateShareLink(Path, true);
+        }
+
+        /// <summary>
+        /// Similar to CreateShareLink. The difference is that this bypasses the Dropbox webserver, used to provide a 
+        /// preview of the file, so that you can effectively stream the contents of your media.
+        /// </summary>
+        /// <remarks>The /media link expires after four hours, allotting enough time to stream files, but not enough to
+        /// leave a connection open indefinitely.</remarks>
+        /// <param name="Path">The path to the media file you want a direct link to.</param>
+        /// <returns>Returns a link directly to a file.</returns>
+        public string MediaLink(string Path)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+
+            //
+            //
+            //
+            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/media/" + session.AppAccess + "/" + Path), parameters);
+
+            return json.FindValue<string>("url");
+        }
+
+
+        public string CopyReference(string Path)
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+
+            //
+            //
+            //
+            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
+                session.FormatAPIServerUrl("/copy_ref/" + session.AppAccess + "/" + Path), parameters);
+
+            return json.FindValue<string>("copy_ref");
         }
     }
 }

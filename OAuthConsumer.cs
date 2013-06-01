@@ -55,7 +55,7 @@ namespace OAuth
         /// <summary>
         /// 
         /// </summary>
-        public static readonly OAuthToken Empty;
+        public static readonly OAuthToken Empty = new OAuthToken(String.Empty, String.Empty);
 
         /// <summary>
         /// 
@@ -66,14 +66,6 @@ namespace OAuth
         /// 
         /// </summary>
         public string Secret { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        static OAuthToken()
-        {
-            Empty = new OAuthToken(String.Empty, String.Empty);
-        }
 
         /// <summary>
         /// 
@@ -155,7 +147,7 @@ namespace OAuth
             //
             //
             if (String.IsNullOrEmpty(key) || String.IsNullOrEmpty(secret))
-                throw new Exception("The consumer key and/or consumer secret can't be empty.");
+                throw new OAuthException("The consumer key and/or consumer secret can't be empty.");
 
             //
             RequestToken = OAuthToken.Empty;
@@ -168,21 +160,24 @@ namespace OAuth
         /// 
         /// </summary>
         /// <param name="method"></param>
+        /// <param name="type"></param>
         /// <param name="url"></param>
+        /// <param name="parameters"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public virtual object Request(RequestMethod method, RequestType type, string url, List<QueryParameter> parameters)
+        public virtual object Request(RequestMethod method, RequestType type, string url, 
+            List<QueryParameter> parameters, byte[] data)
         {
             switch (type)
             {
                 case RequestType.TEXTPLAIN:
-                    return _RequestTextPlain(method, url, parameters);
+                    return _RequestTextPlain(method, url, parameters, data);
                 case RequestType.JSON:
-                    return _RequestJSON(method, url, parameters);
+                    return _RequestJSON(method, url, parameters, data);
                 case RequestType.STREAM:
-                    return _RequestStream(method, url, parameters);
+                    return _RequestStream(method, url, parameters, data);
             }
-            throw new Exception("Invalid RequestType.");
+            throw new OAuthException("Invalid RequestType.");
         }
 
         /// <summary>
@@ -191,8 +186,10 @@ namespace OAuth
         /// <param name="method"></param>
         /// <param name="uri"></param>
         /// <param name="parameters"></param>
+        /// <param name="RawData"></param>
         /// <returns></returns>
-        private StreamReader _RequestStream(RequestMethod method, string url, List<QueryParameter> parameters)
+        private StreamReader _RequestStream(RequestMethod method, string url, List<QueryParameter> parameters,
+            byte[] data)
         {
             Uri BaseUri = BuildUrlWithParams(url, parameters);
 
@@ -227,12 +224,18 @@ namespace OAuth
             //
             if (method == RequestMethod.POST || method == RequestMethod.PUT)
             {
-                request.ContentType = "application/x-www-form-urlencoded";
+                byte[] content = data;
+                request.ContentType = "application/octet-stream";
+
+                if (method == RequestMethod.POST)
+                {
+                    request.ContentType = "application/x-www-form-urlencoded";
+                    content = Encoding.ASCII.GetBytes(BaseUri.Query);
+                }
 
                 using (Stream reqStream = request.GetRequestStream())
                 {
-                    byte[] postArray = Encoding.ASCII.GetBytes(BaseUri.Query);
-                    reqStream.Write(postArray, 0, postArray.Length);
+                    reqStream.Write(content, 0, content.Length);
                 }
             }
 
@@ -243,13 +246,15 @@ namespace OAuth
         /// 
         /// </summary>
         /// <param name="method"></param>
-        /// <param name="uri"></param>
+        /// <param name="url"></param>
         /// <param name="parameters"></param>
+        /// <param name="RawData"></param>
         /// <returns></returns>
-        private string _RequestTextPlain(RequestMethod method, string url, List<QueryParameter> parameters)
+        private string _RequestTextPlain(RequestMethod method, string url, List<QueryParameter> parameters, 
+            byte[] RawData)
         {
             //
-            using (StreamReader r = _RequestStream(method, url, parameters))
+            using (StreamReader r = _RequestStream(method, url, parameters, RawData))
             {
                 return r.ReadToEnd();
             }
@@ -262,9 +267,10 @@ namespace OAuth
         /// <param name="uri"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        private object _RequestJSON(RequestMethod method, string url, List<QueryParameter> parameters)
+        private object _RequestJSON(RequestMethod method, string url, List<QueryParameter> parameters,
+            byte[] RawData)
         {
-            return Json.Deserialize(_RequestTextPlain(method, url, parameters));
+            return Json.Deserialize(_RequestTextPlain(method, url, parameters, RawData));
         }
 
 
@@ -287,7 +293,7 @@ namespace OAuth
             //
             //
             //
-            string response = (string)Request(RequestMethod.GET, RequestType.TEXTPLAIN, RequestTokenUrl, null);
+            string response = (string)Request(RequestMethod.GET, RequestType.TEXTPLAIN, RequestTokenUrl, null, null);
 
             //
             //
@@ -321,7 +327,7 @@ namespace OAuth
             //
             //
             //
-            string response = (string)Request(RequestMethod.GET, RequestType.TEXTPLAIN, AccessTokenUrl, null);
+            string response = (string)Request(RequestMethod.GET, RequestType.TEXTPLAIN, AccessTokenUrl, null, null);
 
             //
             //
@@ -344,7 +350,7 @@ namespace OAuth
             //
             // Raise an exception if the Request token url is not set.
             //
-            if (string.IsNullOrEmpty(AuthorizationUrlBase))
+            if (String.IsNullOrEmpty(AuthorizationUrlBase))
                 throw new OAuthException("The AuthorizationUrlBase must be set.");
 
             //

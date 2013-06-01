@@ -41,6 +41,9 @@ namespace Dropbox
         /// </summary>
         public FileEntry FileEntry { get; set; }
 
+        /// <summary>
+        /// DeltaEntry default constructor.
+        /// </summary>
         public DeltaEntry()
         {
             FileEntry = FileEntry.Empty;

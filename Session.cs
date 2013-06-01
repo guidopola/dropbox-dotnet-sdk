@@ -74,18 +74,33 @@ namespace Dropbox
         /// <param name="method"></param>
         /// <param name="type"></param>
         /// <param name="url"></param>
+        /// <param name="parameters"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public override object Request(RequestMethod method, RequestType type, string url, List<QueryParameter> data)
+        public override object Request(RequestMethod method, RequestType type, string url, 
+            List<QueryParameter> parameters, byte[] data)
         {
             try
             {
-                return base.Request(method, type, url, data);
+                return base.Request(method, type, url, parameters, data);
             }
             catch (WebException e)
             {
                 throw new DropboxException(e);
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="type"></param>
+        /// <param name="url"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public object Request(RequestMethod method, RequestType type, string url, List<QueryParameter> parameters)
+        {
+            return Request(method, type, url, parameters, null);
         }
         
         /// <summary>

@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="AccessType.cs" />
     <Compile Include="AccountInfo.cs" />
+    <Compile Include="ChunkedUploader.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="DeltaEntry.cs" />
     <Compile Include="DeltaPage.cs" />
