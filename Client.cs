@@ -60,11 +60,13 @@ namespace Dropbox
         /// <summary>
         /// Create a folder in the user's dropbox account.
         /// </summary>
-        /// <param name="path">The path where the folder will be created. [NOTE] Start with a slash '/'</param>
+        /// <param name="path">The path where the folder will be created.</param>
+        /// <remarks>Path must start with a slash '/'</remarks>
         /// <returns>The newly created FileEntry</returns>
         public FileEntry CreateFolder(string path)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            path = Util.SafeFilePath(path);
 
             parameters.Add(new QueryParameter("root", session.AccessType));
             parameters.Add(new QueryParameter("path", path));
@@ -86,6 +88,9 @@ namespace Dropbox
         public FileEntry CopyFile(string PathOrRef, string Destination, bool CopyFromRef) 
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            
+            if(!CopyFromRef)
+                PathOrRef = Util.SafeFilePath(PathOrRef);
 
             parameters.Add(new QueryParameter("root", session.AccessType));
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
@@ -116,6 +121,7 @@ namespace Dropbox
         public FileEntry RemoveFile(string Path)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("root", session.AccessType));
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
@@ -135,6 +141,8 @@ namespace Dropbox
         public FileEntry MoveFile(string Path, string Destination)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
+            Destination = Util.SafeFilePath(Destination);
 
             parameters.Add(new QueryParameter("root", session.AccessType));
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
@@ -316,7 +324,7 @@ namespace Dropbox
             //
             //
             List<Object> json = (List<Object>)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/search/" + session.AccessType + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/search/" + session.AccessType + Path), parameters);
 
             //
             // Iterate through json and add it
