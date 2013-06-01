@@ -86,7 +86,7 @@ namespace Dropbox
         /// relative to root.</param>
         /// <param name="CopyFromRef">We are copying from a reference or a path?</param>
         /// <returns>FileEntry for the copy of the file or folder</returns>
-        public FileEntry FileCopy(string PathOrRef, string Destination, bool CopyFromRef) 
+        public FileEntry CopyFile(string PathOrRef, string Destination, bool CopyFromRef) 
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
 
@@ -100,9 +100,9 @@ namespace Dropbox
         }
 
 
-        public FileEntry FileCopy(string Path, string Destination)
+        public FileEntry CopyFile(string Path, string Destination)
         {
-            return FileCopy(Path, Destination, false);
+            return CopyFile(Path, Destination, false);
         }
 
         /// <summary>
