@@ -159,13 +159,8 @@ namespace Dropbox
             if( FileLimit > kFileLimit )
                 throw new DropboxException("FileLimit exceed 25,000.");
 
-            //
-            // @TODO: Create function FormatPath or similar
-            //
-            if (Path.EndsWith("/"))
-                Path.Remove(Path.Length - 1);
-
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
             parameters.Add(new QueryParameter("file_limit", FileLimit.ToString()));
@@ -196,6 +191,7 @@ namespace Dropbox
 
             List<FileEntry> result = new List<FileEntry>();
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
             parameters.Add(new QueryParameter("path", Path));
@@ -233,6 +229,7 @@ namespace Dropbox
         public FileEntry RestoreFile(string Path, string Revision)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
             parameters.Add(new QueryParameter("path", Path));
@@ -249,8 +246,7 @@ namespace Dropbox
         /// <returns></returns>
         public StreamReader DownloadFile(string Path)
         {
-            if (Path.EndsWith("/"))
-                Path.Remove(Path.Length - 1);
+            Path = Util.SafeFilePath(Path);
 
             StreamReader r = (StreamReader)session.Request(RequestMethod.GET, RequestType.STREAM,
                 session.FormatContentUrl("/files/" + session.AccessType + Path), null);
@@ -309,6 +305,7 @@ namespace Dropbox
         {
             List<FileEntry> result = new List<FileEntry>();
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
             parameters.Add(new QueryParameter("query", Query));
@@ -373,15 +370,13 @@ namespace Dropbox
         public string CreateShareLink(string Path, bool ShortUrl)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
             parameters.Add(new QueryParameter("short_url", ShortUrl.ToString()));
 
-            //
-            //
-            //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/shares/" + session.AccessType + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/shares/" + session.AccessType + Path), parameters);
 
             return json.FindValue<string>("url");
         }
@@ -409,6 +404,7 @@ namespace Dropbox
         public string MediaLink(string Path)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
 
@@ -416,7 +412,7 @@ namespace Dropbox
             //
             //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/media/" + session.AccessType + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/media/" + session.AccessType + Path), parameters);
 
             return json.FindValue<string>("url");
         }
@@ -430,6 +426,7 @@ namespace Dropbox
         public string CopyReference(string Path)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
+            Path = Util.SafeFilePath(Path);
 
             parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
 
@@ -437,7 +434,7 @@ namespace Dropbox
             //
             //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
-                session.FormatAPIServerUrl("/copy_ref/" + session.AccessType + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/copy_ref/" + session.AccessType + Path), parameters);
 
             return json.FindValue<string>("copy_ref");
         }
