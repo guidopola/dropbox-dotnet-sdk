@@ -35,6 +35,7 @@ namespace Dropbox
     {
         public const int kFileLimit = 25000;
         public const int kFileLimitSearch = 1000;
+        public const int kRevisionsLimit = 1000;
 
         /// <summary>
         /// 
@@ -53,10 +54,6 @@ namespace Dropbox
         public Client(Session s)
         {
             session = s;
-
-            //
-            //
-            //
             AccountInfo = new AccountInfo(session);
         }
 
@@ -181,8 +178,47 @@ namespace Dropbox
                 parameters.Add(new QueryParameter("rev", RevisionId));
 
             return new FileEntry((JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
-                session.FormatAPIServerUrl(String.Format("/metadata/{0}{1}",
-                    session.AccessType, Path)), parameters));
+                session.FormatAPIServerUrl("/metadata/" + session.AccessType + Path), parameters));
+        }
+
+        /// <summary>
+        /// Obtains a list of FileEntry for the previous revisions of a file.
+        /// </summary>
+        /// <param name="Path">The path to the file.</param>
+        /// <param name="Limit">Default is 10. Max is 1,000. When listing a file, the service will not report listings 
+        /// containing more than the amount specified and will instead respond with a 406 (Not Acceptable) status 
+        /// response.</param>
+        /// <returns>A list of all revisions.</returns>
+        public List<FileEntry> FileRevisions(string Path, int Limit)
+        {
+            if (Limit > kRevisionsLimit)
+                throw new DropboxException("Limit exceed 1,000.");
+
+            List<FileEntry> result = new List<FileEntry>();
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("path", Path));
+            parameters.Add(new QueryParameter("rev_limit", Limit.ToString()));
+
+            List<Object> json = (List<Object>)session.Request(RequestMethod.GET, RequestType.JSON,
+                session.FormatAPIServerUrl("/revisions/" + session.AccessType + Path), parameters);
+
+            foreach (JsonDictionary metadata in json)
+            {
+                result.Add(new FileEntry(metadata));
+            }
+            return result;
+        }
+        
+        /// <summary>
+        /// Obtains a list of FileEntry for the previous revisions of a file.
+        /// </summary>
+        /// <param name="Path">The path to the file.</param>
+        /// <returns>A list of all revisions.</returns>
+        public List<FileEntry> FileRevisions(string Path)
+        {
+            return FileRevisions(Path, 10);
         }
 
         /// <summary>
@@ -196,7 +232,7 @@ namespace Dropbox
                 Path.Remove(Path.Length - 1);
 
             StreamReader r = (StreamReader)session.Request(RequestMethod.GET, RequestType.STREAM,
-                session.FormatContentUrl(String.Format("/files/{0}{1}", session.AccessType, Path)), null);
+                session.FormatContentUrl("/files/" + session.AccessType + Path), null);
 
             return r;
         }
