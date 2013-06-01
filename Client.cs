@@ -67,22 +67,42 @@ namespace Dropbox
         /// <returns>The newly created FileEntry</returns>
         public FileEntry CreateFolder(string path)
         {
-            List<QueryParameter> ParamList = new List<QueryParameter>();
+            List<QueryParameter> parameters = new List<QueryParameter>();
 
-            //
-            //
-            //
-            ParamList.Add(new QueryParameter("root", session.GetAccessType()));
-            ParamList.Add(new QueryParameter("path", path));
-            ParamList.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("root", session.AccessType));
+            parameters.Add(new QueryParameter("path", path));
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
 
-            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/fileops/create_folder"), ParamList);
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/fileops/create_folder"), parameters));
+        }
 
-            //
-            // @TODO: Cache the file entry?
-            //
-            return new FileEntry(json);
+        /// <summary>
+        /// Copies a file or folder to a new location.
+        /// </summary>
+        /// <param name="PathOrRef">Either the file or folder to be copied from relative to root or the Reference code
+        /// created from a previous call to <see cref="Dropbox.Client.CopyReference"/>.</param>
+        /// <param name="Destination">Specifies the destination path, including the new name for the file or folder, 
+        /// relative to root.</param>
+        /// <param name="CopyFromRef">We are copying from a reference or a path?</param>
+        /// <returns>FileEntry for the copy of the file or folder</returns>
+        public FileEntry FileCopy(string PathOrRef, string Destination, bool CopyFromRef) 
+        {
+            List<QueryParameter> parameters = new List<QueryParameter>();
+
+            parameters.Add(new QueryParameter("root", session.AccessType));
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("to_path", Destination));
+            parameters.Add(new QueryParameter((CopyFromRef ? "from_copy_ref" : "from_path"), PathOrRef));
+
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
+                session.FormatAPIServerUrl("/fileops/copy"), parameters));
+        }
+
+
+        public FileEntry FileCopy(string Path, string Destination)
+        {
+            return FileCopy(Path, Destination, false);
         }
 
         /// <summary>
@@ -105,36 +125,35 @@ namespace Dropbox
             if (Path.EndsWith("/"))
                 Path.Remove(Path.Length - 1);
 
-            List<QueryParameter> ParamList = new List<QueryParameter>();
+            List<QueryParameter> parameters = new List<QueryParameter>();
 
-            ParamList.Add(new QueryParameter("locale", session.Locale.ToString()));
-            ParamList.Add(new QueryParameter("file_limit", FileLimit.ToString()));
-            ParamList.Add(new QueryParameter("list", ListChildren.ToString()));
+            parameters.Add(new QueryParameter("locale", session.Locale.ToString()));
+            parameters.Add(new QueryParameter("file_limit", FileLimit.ToString()));
+            parameters.Add(new QueryParameter("list", ListChildren.ToString()));
 
             if(!String.IsNullOrEmpty(Hash))
-                ParamList.Add(new QueryParameter("hash", Hash));
+                parameters.Add(new QueryParameter("hash", Hash));
 
             if (!String.IsNullOrEmpty(RevisionId))
-                ParamList.Add(new QueryParameter("rev", RevisionId));
+                parameters.Add(new QueryParameter("rev", RevisionId));
 
-
-            JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
-                session.FormatAPIServerUrl(String.Format("/metadata/{0}{1}", 
-                    session.GetAccessType(), Path)), ParamList);
-
-            //
-            // @TODO: Cache the file entry?
-            //
-            return new FileEntry(json);
+            return new FileEntry((JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
+                session.FormatAPIServerUrl(String.Format("/metadata/{0}{1}",
+                    session.AccessType, Path)), parameters));
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <returns></returns>
         public StreamReader DownloadFile(string Path)
         {
             if (Path.EndsWith("/"))
                 Path.Remove(Path.Length - 1);
 
             StreamReader r = (StreamReader)session.Request(RequestMethod.GET, RequestType.STREAM,
-                session.FormatContentUrl(String.Format("/files/{0}{1}", session.GetAccessType(), Path)), null);
+                session.FormatContentUrl(String.Format("/files/{0}{1}", session.AccessType, Path)), null);
 
             return r;
         }
@@ -158,7 +177,7 @@ namespace Dropbox
             //
             //
             //
-            return new DeltaPage((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON, 
+            return new DeltaPage((JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
                 session.FormatAPIServerUrl("/delta"), parameters));
         }
 
@@ -200,7 +219,7 @@ namespace Dropbox
             //
             //
             List<Object> json = (List<Object>)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/search/" + session.AppAccess + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/search/" + session.AccessType + "/" + Path), parameters);
 
             //
             // Iterate through json and add it
@@ -262,7 +281,7 @@ namespace Dropbox
             //
             //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/shares/" + session.AppAccess + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/shares/" + session.AccessType + "/" + Path), parameters);
 
             return json.FindValue<string>("url");
         }
@@ -297,12 +316,17 @@ namespace Dropbox
             //
             //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.POST, RequestType.JSON,
-                session.FormatAPIServerUrl("/media/" + session.AppAccess + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/media/" + session.AccessType + "/" + Path), parameters);
 
             return json.FindValue<string>("url");
         }
 
-
+        /// <summary>
+        /// Creates and returns a copy_ref to a file. This reference string can be used to copy that file to another 
+        /// user's Dropbox by passing it in as the from_copy_ref parameter on <seealso cref="Dropbox.Client.CopyFile"/>
+        /// </summary>
+        /// <param name="Path">The path to the file you want a copy reference to refer to.</param>
+        /// <returns>A copy reference to the specified file</returns>
         public string CopyReference(string Path)
         {
             List<QueryParameter> parameters = new List<QueryParameter>();
@@ -313,7 +337,7 @@ namespace Dropbox
             //
             //
             JsonDictionary json = (JsonDictionary)session.Request(RequestMethod.GET, RequestType.JSON,
-                session.FormatAPIServerUrl("/copy_ref/" + session.AppAccess + "/" + Path), parameters);
+                session.FormatAPIServerUrl("/copy_ref/" + session.AccessType + "/" + Path), parameters);
 
             return json.FindValue<string>("copy_ref");
         }

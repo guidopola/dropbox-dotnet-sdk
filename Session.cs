@@ -43,6 +43,8 @@ namespace Dropbox
         /// </summary>
         public readonly AccessType AppAccess;
 
+        public string AccessType { get { return _AccessType(); } }
+
         /// <summary>
         /// 
         /// </summary>
@@ -129,9 +131,9 @@ namespace Dropbox
         /// 
         /// </summary>
         /// <returns></returns>
-        public string GetAccessType()
+        private string _AccessType()
         {
-            return AppAccess == AccessType.DropboxFolder ? 
+            return AppAccess == Dropbox.AccessType.DropboxFolder ? 
                 "dropbox" : "sandbox";
         }
     }
